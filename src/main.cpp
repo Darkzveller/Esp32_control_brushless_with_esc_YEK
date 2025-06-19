@@ -99,31 +99,40 @@ void loop()
 
 #define PIN_BRUSHLESS_MOTOR 18
 #define CHANNEL_0 0
-#define RESOLUTION_BITS 16
+#define RESOLUTION_BITS 16 // Obtenir un control fin est nettement meilleur pour le moteur
 #define FREQ_HZ 50
-
-const uint32_t pwmMax = (1 << RESOLUTION_BITS) - 1;
-
-uint32_t pulseWidthToDuty(uint32_t pulseWidthMicros)
-{
-  uint32_t periodMicros = 1000000 / FREQ_HZ;
-  return (pulseWidthMicros * pwmMax) / periodMicros;
-}
+#define PWM_MAX ((1 << RESOLUTION_BITS) - 1) // Revient a faire  2^{RESOLUTION_BITS} - 1
 
 // Convertit un pourcentage (0 à 100) en valeur de rapport cyclique pour le PWM
 uint32_t pourcentageEnRapportCyclique(float pourcentage)
 {
-  // S’assurer que le pourcentage est entre 0 et 100
-  if (pourcentage < 0)
-  {
-    pourcentage = 0;
-  }
-  else if (pourcentage > 100)
-  {
-    pourcentage = 100;
-  }
+  pourcentage = constrain(pourcentage, 0, 100);
+  pourcentage = (pourcentage / 100.0) * PWM_MAX;
+  return pourcentage;
+}
+void move_brushless(int rapport_cyclique)
+{
+  ledcWrite(CHANNEL_0, pourcentageEnRapportCyclique(rapport_cyclique)); // 5% (équivaut environ à 1000µs)
+}
 
-  return (uint32_t)((pourcentage / 100.0) * pwmMax);
+void init_esc(bool _active_sequence)
+{
+  if (_active_sequence)
+  {
+    Serial.println("Mise au min des gaz (0%)");
+    move_brushless(5);
+    delay(5000);
+
+    Serial.println("Mise au max des gaz (10%)");
+    move_brushless(10); // 10% (~2000µs)
+    delay(2000);
+
+    Serial.println("Retour au min des gaz (5%)");
+    move_brushless(5); // 5%
+    delay(2000);
+
+    Serial.println("Calibrage terminé !");
+  }
 }
 
 void setup()
@@ -131,37 +140,14 @@ void setup()
   Serial.begin(115200);
   ledcSetup(CHANNEL_0, FREQ_HZ, RESOLUTION_BITS);
   ledcAttachPin(PIN_BRUSHLESS_MOTOR, CHANNEL_0);
-  /*
-    Serial.println("Mise au min des gaz (1000 µs)");
-    ledcWrite(CHANNEL_0, pulseWidthToDuty(1000));
-    delay(5000);
-
-    Serial.println("Mise au max des gaz (2000 µs)");
-    ledcWrite(CHANNEL_0, pulseWidthToDuty(2000));
-    delay(2000);
-
-    Serial.println("Retour au min des gaz (1000 µs)");
-    ledcWrite(CHANNEL_0, pulseWidthToDuty(1000));
-    delay(2000);
-    */
-
-  Serial.println("Mise au min des gaz (0%)");
-  ledcWrite(CHANNEL_0, pourcentageEnRapportCyclique(5.0));  // 5% (équivaut environ à 1000µs)
-  delay(5000);
-
-  Serial.println("Mise au max des gaz (10%)");
-  ledcWrite(CHANNEL_0, pourcentageEnRapportCyclique(10.0)); // 10% (~2000µs)
-  delay(2000);
-
-  Serial.println("Retour au min des gaz (5%)");
-  ledcWrite(CHANNEL_0, pourcentageEnRapportCyclique(5.0));  // 5%
-  delay(2000);
-
-
-  Serial.println("Calibrage terminé !");
+  init_esc(true);
 }
 
 void loop()
 {
   // Tu pourras ajouter ton code ici pour varier entre 1000 et 2000 µs
+  // move_brushless(50);
+  // delay(5000);
+  // move_brushless(5);
+  // delay(5000);
 }
