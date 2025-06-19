@@ -1,0 +1,3 @@
+How to control a BLDC with an Arduino : https://www.youtube.com/watch?v=qOzE5F5vFGs
+
+PROGRAMMER des MOTEURS Brushless en 10 MIN !! (Tuto débutant Arduino) : https://www.youtube.com/watch?v=P11c6zzwPV4&t=32s
